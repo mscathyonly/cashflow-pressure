@@ -117,9 +117,106 @@
     .sync-status { font-size: 13px; color: #475569; margin-top: 8px; }
     .divider { height: 1px; background: #e5e7eb; margin: 18px 0; }
     @media (max-width: 960px) {
-      .container { grid-template-columns: 1fr; padding: 12px; }
-      header { padding: 20px 12px 8px; }
-      .summary-grid { grid-template-columns: 1fr 1fr; }
+      header {
+        padding: 20px 16px 8px;
+      }
+
+      h1 {
+        font-size: 26px;
+      }
+
+      .subtitle {
+        font-size: 15px;
+      }
+
+      .container {
+        grid-template-columns: 1fr;
+        padding: 12px 16px 28px;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      header {
+        padding: 20px 16px 8px;
+      }
+
+      h1 {
+        font-size: 25px;
+      }
+
+      .container {
+        padding: 12px 12px 24px;
+      }
+
+      .panel,
+      .card,
+      .summary-card {
+        border-radius: 16px;
+      }
+
+      .panel {
+        padding: 16px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .hint,
+      .sync-box {
+        padding: 14px;
+        font-size: 14px;
+      }
+
+      .row,
+      .row-3 {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .button-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-card {
+        padding: 14px;
+      }
+
+      .summary-card .value {
+        font-size: 20px;
+      }
+
+      .chart-wrap {
+        height: 320px;
+      }
+
+      .item {
+        align-items: center;
+      }
+
+      .item button {
+        padding: 9px 12px;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      th,
+      td {
+        padding: 10px;
+      }
     }
   </style>
 </head>
