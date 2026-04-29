@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>半年經濟壓力表</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      background: #f5f7fb;
+      color: #243044;
+    }
+    header { padding: 24px 28px 12px; }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    .subtitle { margin: 0; color: #64748b; line-height: 1.6; }
+    .container {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 18px;
+      padding: 16px 28px 32px;
+    }
+    .panel, .card {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      border: 1px solid #e5e7eb;
+    }
+    .panel { padding: 18px; height: fit-content; }
+    .section-title { font-size: 18px; font-weight: 700; margin: 4px 0 12px; }
+    label {
+      display: block;
+      font-size: 13px;
+      color: #475569;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 14px;
+      background: #fff;
+    }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .row-3 { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-soft { background: #e0ecff; color: #1d4ed8; }
+    .btn-danger { background: #fee2e2; color: #b91c1c; }
+    .btn-gray { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+    .btn-full { width: 100%; margin: 6px 0 14px; }
+    .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .item-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .item {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+      font-size: 14px;
+    }
+    .item small { color: #64748b; display: block; margin-top: 2px; }
+    .main { display: flex; flex-direction: column; gap: 18px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .summary-card {
+      padding: 16px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+    }
+    .summary-card .title { color: #64748b; font-size: 13px; margin-bottom: 8px; }
+    .summary-card .value { font-size: 22px; font-weight: 800; }
+    .summary-card .note { color: #64748b; font-size: 12px; margin-top: 6px; }
+    .card { padding: 18px; }
+    .chart-wrap { height: 360px; }
+    table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 12px; font-size: 14px; }
+    th, td { padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; }
+    th:first-child, td:first-child { text-align: left; }
+    th { background: #f8fafc; color: #475569; }
+    .risk-safe { color: #15803d; font-weight: 800; }
+    .risk-watch { color: #c2410c; font-weight: 800; }
+    .risk-danger { color: #b91c1c; font-weight: 800; }
+    .hint {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .sync-box {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #eff6ff;
+      color: #1e40af;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 14px;
+      border: 1px solid #bfdbfe;
+    }
+    .sync-status { font-size: 13px; color: #475569; margin-top: 8px; }
+    .divider { height: 1px; background: #e5e7eb; margin: 18px 0; }
+    @media (max-width: 960px) {
+      .container { grid-template-columns: 1fr; padding: 12px; }
+      header { padding: 20px 12px 8px; }
+      .summary-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>半年經濟壓力表</h1>
+    <p class="subtitle">看未來 6 個月固定支出、分期、購買模擬後的每月壓力，幫你判斷高單價商品適合什麼時候買。</p>
+  </header>
+
+  <div class="container">
+    <aside class="panel">
+      <div class="hint">建議收入先填「保守收入」，例如本薪；勞健保、房租、保險這種固定會扣的項目放在固定支出。</div>
+
+      <div class="sync-box">
+        <b>Google Drive 同步</b><br />
+        資料會存到你的 Google Drive appDataFolder 隱藏資料夾。
+        <div class="button-row" style="margin-top: 10px;">
+          <button class="btn-primary" onclick="connectGoogleDrive()">連接 Google</button>
+          <button class="btn-gray" onclick="manualSaveToDrive()">立即上傳</button>
+        </div>
+        <div class="button-row">
+          <button class="btn-gray" onclick="loadFromDrive(true)">從雲端載入</button>
+          <button class="btn-danger" onclick="resetAllData()">重設資料</button>
+        </div>
+        <div class="button-row">
+          <button class="btn-gray" onclick="exportJson()">匯出 JSON</button>
+          <button class="btn-gray" onclick="triggerImportJson()">匯入 JSON</button>
+        </div>
+        <input id="importFileInput" type="file" accept="application/json,.json" style="display:none" onchange="importJson(event)" />
+        <div id="syncStatus" class="sync-status">尚未連接 Google Drive，本機資料會先存在 localStorage。</div>
+      </div>
+
+      <div class="section-title">基本設定</div>
+      <div class="row">
+        <div>
+          <label>每月保守收入</label>
+          <input id="income" type="number" value="50000" min="0" />
+        </div>
+        <div>
+          <label>起算月份</label>
+          <input id="startMonth" type="month" value="2026-05" />
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-title">固定支出</div>
+      <div class="row">
+        <div>
+          <label>名稱</label>
+          <input id="fixedName" placeholder="例如：房租" />
+        </div>
+        <div>
+          <label>金額</label>
+          <input id="fixedAmount" type="number" placeholder="15000" min="0" />
+        </div>
+      </div>
+      <button class="btn-soft btn-full" onclick="addFixedExpense()">新增固定支出</button>
+      <div id="fixedList" class="item-list"></div>
+
+      <div class="section-title">既有分期 / 負債</div>
+      <div class="row-3">
+        <div>
+          <label>名稱</label>
+          <input id="installmentName" placeholder="例如：信用卡分期" />
+        </div>
+        <div>
+          <label>每月金額</label>
+          <input id="installmentAmount" type="number" placeholder="10000" min="0" />
+        </div>
+        <div>
+          <label>最後付款月</label>
+          <input id="installmentEnd" type="month" value="2026-09" />
+        </div>
+      </div>
+      <button class="btn-soft btn-full" onclick="addInstallment()">新增分期</button>
+      <div id="installmentList" class="item-list"></div>
+
+      <div class="section-title">年度 / 單次支出</div>
+      <div class="row-3">
+        <div>
+          <label>名稱</label>
+          <input id="annualName" placeholder="例如：牌照稅" />
+        </div>
+        <div>
+          <label>金額</label>
+          <input id="annualAmount" type="number" placeholder="7120" min="0" />
+        </div>
+        <div>
+          <label>發生月份</label>
+          <input id="annualMonth" type="month" value="2026-07" />
+        </div>
+      </div>
+      <button class="btn-soft btn-full" onclick="addAnnualExpense()">新增年度 / 單次支出</button>
+      <div id="annualList" class="item-list"></div>
+
+      <div class="section-title">購買模擬</div>
+      <div class="row-3">
+        <div>
+          <label>商品</label>
+          <input id="purchaseName" placeholder="例如：手機" />
+        </div>
+        <div>
+          <label>總價</label>
+          <input id="purchaseTotal" type="number" placeholder="40000" min="0" />
+        </div>
+        <div>
+          <label>期數</label>
+          <input id="purchaseMonths" type="number" value="3" min="1" />
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>開始付款月</label>
+          <input id="purchaseStart" type="month" value="2026-09" />
+        </div>
+        <div>
+          <label>付款方式</label>
+          <select id="purchaseMode">
+            <option value="installment">分期平均分攤</option>
+            <option value="once">一次付清</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-primary btn-full" onclick="addPurchaseSimulation()">加入購買模擬</button>
+      <div id="purchaseList" class="item-list"></div>
+    </aside>
+
+    <main class="main">
+      <section class="summary-grid">
+        <div class="summary-card">
+          <div class="title">最高壓力月</div>
+          <div id="maxPressure" class="value">-</div>
+          <div id="maxPressureNote" class="note">-</div>
+        </div>
+        <div class="summary-card">
+          <div class="title">最低壓力月</div>
+          <div id="minPressure" class="value">-</div>
+          <div id="minPressureNote" class="note">-</div>
+        </div>
+        <div class="summary-card">
+          <div class="title">最早安全月</div>
+          <div id="safeMonth" class="value">-</div>
+          <div class="note">支出 / 收入低於 50%</div>
+        </div>
+        <div class="summary-card">
+          <div class="title">購買建議</div>
+          <div id="buyAdvice" class="value">-</div>
+          <div id="buyAdviceNote" class="note">-</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">壓力堆疊圖 + 壓力比折線圖</div>
+        <div class="chart-wrap">
+          <canvas id="pressureChart"></canvas>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">未來 6 個月明細</div>
+        <table>
+          <thead>
+            <tr>
+              <th>月份</th>
+              <th>固定支出</th>
+              <th>既有分期</th>
+              <th>年度/單次</th>
+              <th>模擬購買</th>
+              <th>總壓力</th>
+              <th>壓力比</th>
+              <th>判斷</th>
+            </tr>
+          </thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+<script>
+  const CLIENT_ID = '967655348934-m8u7rd7hac6qpormlu7le2ockpg1a9iq.apps.googleusercontent.com';
+  const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+  const DRIVE_FILE_NAME = 'cashflow-pressure-data.json';
+  const LOCAL_STORAGE_KEY = 'cashflowPressureDataV1';
+
+  const defaultState = {
+    income: 50000,
+    startMonth: '2026-05',
+    fixedExpenses: [{ name: '固定支出', amount: 20000 }],
+    installments: [{ name: '目前分期', amount: 10000, endMonth: '2026-08' }],
+    annualExpenses: [],
+    purchases: []
+  };
+
+  const state = {
+    fixedExpenses: [],
+    installments: [],
+    annualExpenses: [],
+    purchases: []
+  };
+
+  let chart;
+  let accessToken = null;
+  let driveFileId = null;
+  let saveTimer = null;
+  let isHydrating = false;
+
+  function setSyncStatus(message) {
+    document.getElementById('syncStatus').textContent = message;
+  }
+
+  function cloneData(data) {
+    return JSON.parse(JSON.stringify(data));
+  }
+
+  function money(n) {
+    return 'NT$' + Math.round(n || 0).toLocaleString('zh-TW');
+  }
+
+  function parseMonth(monthStr) {
+    const [year, month] = monthStr.split('-').map(Number);
+    return new Date(year, month - 1, 1);
+  }
+
+  function formatMonth(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  function displayMonth(monthStr) {
+    const [year, month] = monthStr.split('-');
+    return `${year}/${Number(month)}月`;
+  }
+
+  function addMonths(monthStr, months) {
+    const date = parseMonth(monthStr);
+    date.setMonth(date.getMonth() + months);
+    return formatMonth(date);
+  }
+
+  function isMonthBetween(target, start, end) {
+    return target >= start && target <= end;
+  }
+
+  function getSnapshot() {
+    return {
+      income: Number(document.getElementById('income').value) || 0,
+      startMonth: document.getElementById('startMonth').value || formatMonth(new Date()),
+      fixedExpenses: cloneData(state.fixedExpenses),
+      installments: cloneData(state.installments),
+      annualExpenses: cloneData(state.annualExpenses),
+      purchases: cloneData(state.purchases),
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  function applySnapshot(data) {
+    const safeData = data || defaultState;
+    document.getElementById('income').value = safeData.income ?? defaultState.income;
+    document.getElementById('startMonth').value = safeData.startMonth || defaultState.startMonth;
+    state.fixedExpenses = Array.isArray(safeData.fixedExpenses) ? safeData.fixedExpenses : [];
+    state.installments = Array.isArray(safeData.installments) ? safeData.installments : [];
+    state.annualExpenses = Array.isArray(safeData.annualExpenses) ? safeData.annualExpenses : [];
+    state.purchases = Array.isArray(safeData.purchases) ? safeData.purchases : [];
+  }
+
+  function saveLocal() {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(getSnapshot()));
+  }
+
+  function loadLocal() {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!raw) return cloneData(defaultState);
+    try {
+      return JSON.parse(raw);
+    } catch (error) {
+      console.warn('localStorage 資料格式錯誤，改用預設資料', error);
+      return cloneData(defaultState);
+    }
+  }
+
+  function addFixedExpense() {
+    const name = document.getElementById('fixedName').value.trim();
+    const amount = Number(document.getElementById('fixedAmount').value);
+    if (!name || amount <= 0) return alert('請輸入固定支出名稱與金額');
+    state.fixedExpenses.push({ name, amount });
+    document.getElementById('fixedName').value = '';
+    document.getElementById('fixedAmount').value = '';
+    render();
+  }
+
+  function addInstallment() {
+    const name = document.getElementById('installmentName').value.trim();
+    const amount = Number(document.getElementById('installmentAmount').value);
+    const endMonth = document.getElementById('installmentEnd').value;
+    if (!name || amount <= 0 || !endMonth) return alert('請輸入分期名稱、金額與最後付款月');
+    state.installments.push({ name, amount, endMonth });
+    document.getElementById('installmentName').value = '';
+    document.getElementById('installmentAmount').value = '';
+    render();
+  }
+
+  function addAnnualExpense() {
+    const name = document.getElementById('annualName').value.trim();
+    const amount = Number(document.getElementById('annualAmount').value);
+    const month = document.getElementById('annualMonth').value;
+    if (!name || amount <= 0 || !month) return alert('請輸入年度 / 單次支出名稱、金額與發生月份');
+    state.annualExpenses.push({ name, amount, month });
+    document.getElementById('annualName').value = '';
+    document.getElementById('annualAmount').value = '';
+    render();
+  }
+
+  function addPurchaseSimulation() {
+    const name = document.getElementById('purchaseName').value.trim();
+    const total = Number(document.getElementById('purchaseTotal').value);
+    const months = Number(document.getElementById('purchaseMonths').value);
+    const startMonth = document.getElementById('purchaseStart').value;
+    const mode = document.getElementById('purchaseMode').value;
+
+    if (!name || total <= 0 || months <= 0 || !startMonth) return alert('請輸入商品、總價、期數與開始付款月');
+
+    const monthlyAmount = mode === 'once' ? total : total / months;
+    const endMonth = mode === 'once' ? startMonth : addMonths(startMonth, months - 1);
+
+    state.purchases.push({ name, total, monthlyAmount, startMonth, endMonth, months, mode });
+    document.getElementById('purchaseName').value = '';
+    document.getElementById('purchaseTotal').value = '';
+    render();
+  }
+
+  function removeItem(type, index) {
+    state[type].splice(index, 1);
+    render();
+  }
+
+  function resetAllData() {
+    if (!confirm('確定要重設所有資料嗎？這會覆蓋本機資料，若已連接 Google 也會同步覆蓋雲端。')) return;
+    applySnapshot(cloneData(defaultState));
+    render();
+  }
+
+  function exportJson() {
+    const snapshot = getSnapshot();
+    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cashflow-pressure-${snapshot.startMonth || 'backup'}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function triggerImportJson() {
+    document.getElementById('importFileInput').value = '';
+    document.getElementById('importFileInput').click();
+  }
+
+  async function importJson(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!confirm('確定要匯入這份 JSON 嗎？目前畫面資料會被覆蓋。')) return;
+      applySnapshot(data);
+      render();
+      setSyncStatus('已匯入 JSON，資料已存到本機；若已連接 Google，會自動同步到雲端。');
+    } catch (error) {
+      console.error(error);
+      alert('匯入失敗：JSON 格式不正確。');
+    }
+  }
+
+  function calcRows() {
+    const income = Number(document.getElementById('income').value) || 0;
+    const startMonth = document.getElementById('startMonth').value || formatMonth(new Date());
+    const fixedTotal = state.fixedExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+    return Array.from({ length: 6 }, (_, i) => {
+      const month = addMonths(startMonth, i);
+      const installmentTotal = state.installments
+        .filter(item => month <= item.endMonth)
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      const annualTotal = state.annualExpenses
+        .filter(item => item.month === month)
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      const purchaseTotal = state.purchases
+        .filter(item => isMonthBetween(month, item.startMonth, item.endMonth))
+        .reduce((sum, item) => sum + Number(item.monthlyAmount || 0), 0);
+      const totalPressure = fixedTotal + installmentTotal + annualTotal + purchaseTotal;
+      const ratio = income > 0 ? totalPressure / income : 0;
+      const risk = ratio > 0.7 ? '危險' : ratio >= 0.5 ? '觀察' : '安全';
+      return { month, fixedTotal, installmentTotal, annualTotal, purchaseTotal, totalPressure, ratio, risk };
+    });
+  }
+
+  function riskClass(risk) {
+    if (risk === '危險') return 'risk-danger';
+    if (risk === '觀察') return 'risk-watch';
+    return 'risk-safe';
+  }
+
+  function renderLists() {
+    document.getElementById('fixedList').innerHTML = state.fixedExpenses.map((item, index) => `
+      <div class="item">
+        <div><b>${item.name}</b><small>${money(item.amount)} / 月</small></div>
+        <button class="btn-danger" onclick="removeItem('fixedExpenses', ${index})">刪除</button>
+      </div>
+    `).join('');
+
+    document.getElementById('installmentList').innerHTML = state.installments.map((item, index) => `
+      <div class="item">
+        <div><b>${item.name}</b><small>${money(item.amount)} / 月，到 ${displayMonth(item.endMonth)}</small></div>
+        <button class="btn-danger" onclick="removeItem('installments', ${index})">刪除</button>
+      </div>
+    `).join('');
+
+    document.getElementById('annualList').innerHTML = state.annualExpenses.map((item, index) => `
+      <div class="item">
+        <div><b>${item.name}</b><small>${money(item.amount)}，${displayMonth(item.month)}</small></div>
+        <button class="btn-danger" onclick="removeItem('annualExpenses', ${index})">刪除</button>
+      </div>
+    `).join('');
+
+    document.getElementById('purchaseList').innerHTML = state.purchases.map((item, index) => `
+      <div class="item">
+        <div><b>${item.name}</b><small>${money(item.total)}，${item.mode === 'once' ? '一次付清' : item.months + '期'}，${displayMonth(item.startMonth)} 起</small></div>
+        <button class="btn-danger" onclick="removeItem('purchases', ${index})">刪除</button>
+      </div>
+    `).join('');
+  }
+
+  function renderTable(rows) {
+    document.getElementById('resultBody').innerHTML = rows.map(row => `
+      <tr>
+        <td>${displayMonth(row.month)}</td>
+        <td>${money(row.fixedTotal)}</td>
+        <td>${money(row.installmentTotal)}</td>
+        <td>${money(row.annualTotal)}</td>
+        <td>${money(row.purchaseTotal)}</td>
+        <td><b>${money(row.totalPressure)}</b></td>
+        <td>${Math.round(row.ratio * 100)}%</td>
+        <td class="${riskClass(row.risk)}">${row.risk}</td>
+      </tr>
+    `).join('');
+  }
+
+  function renderSummary(rows) {
+    const max = rows.reduce((a, b) => a.totalPressure > b.totalPressure ? a : b);
+    const min = rows.reduce((a, b) => a.totalPressure < b.totalPressure ? a : b);
+    const safe = rows.find(row => row.risk === '安全');
+    const last = rows[rows.length - 1];
+
+    document.getElementById('maxPressure').textContent = money(max.totalPressure);
+    document.getElementById('maxPressureNote').textContent = `${displayMonth(max.month)}｜${Math.round(max.ratio * 100)}%`;
+    document.getElementById('minPressure').textContent = money(min.totalPressure);
+    document.getElementById('minPressureNote').textContent = `${displayMonth(min.month)}｜${Math.round(min.ratio * 100)}%`;
+    document.getElementById('safeMonth').textContent = safe ? displayMonth(safe.month) : '尚未出現';
+
+    const dangerousMonths = rows.filter(row => row.risk === '危險').length;
+    const watchMonths = rows.filter(row => row.risk === '觀察').length;
+
+    if (dangerousMonths > 0) {
+      document.getElementById('buyAdvice').textContent = '先不要';
+      document.getElementById('buyAdviceNote').textContent = `有 ${dangerousMonths} 個月份壓力偏高`;
+    } else if (watchMonths > 0) {
+      document.getElementById('buyAdvice').textContent = '可觀察';
+      document.getElementById('buyAdviceNote').textContent = '建議等壓力比低於 50% 再買';
+    } else {
+      document.getElementById('buyAdvice').textContent = '較安全';
+      document.getElementById('buyAdviceNote').textContent = `6個月後壓力比 ${Math.round(last.ratio * 100)}%`;
+    }
+  }
+
+  function renderChart(rows) {
+    const ctx = document.getElementById('pressureChart');
+    const labels = rows.map(row => displayMonth(row.month));
+    const ratioData = rows.map(row => row.ratio);
+
+    const data = {
+      labels,
+      datasets: [
+        {
+          label: '固定支出',
+          type: 'bar',
+          data: rows.map(row => row.fixedTotal),
+          stack: 'expenseStack',
+          yAxisID: 'y',
+          borderWidth: 1
+        },
+        {
+          label: '既有分期',
+          type: 'bar',
+          data: rows.map(row => row.installmentTotal),
+          stack: 'expenseStack',
+          yAxisID: 'y',
+          borderWidth: 1
+        },
+        {
+          label: '年度/單次支出',
+          type: 'bar',
+          data: rows.map(row => row.annualTotal),
+          stack: 'expenseStack',
+          yAxisID: 'y',
+          borderWidth: 1
+        },
+        {
+          label: '購買模擬',
+          type: 'bar',
+          data: rows.map(row => row.purchaseTotal),
+          stack: 'expenseStack',
+          yAxisID: 'y',
+          borderWidth: 1
+        },
+        {
+          label: '壓力比',
+          type: 'line',
+          data: ratioData,
+          yAxisID: 'y1',
+          tension: 0.28,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: ratioData.map(r => r > 0.7 ? '#dc2626' : r >= 0.5 ? '#f97316' : '#16a34a'),
+          pointBorderColor: ratioData.map(r => r > 0.7 ? '#dc2626' : r >= 0.5 ? '#f97316' : '#16a34a'),
+          borderWidth: 3
+        }
+      ]
+    };
+
+    if (chart) chart.destroy();
+    chart = new Chart(ctx, {
+      data,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: context => {
+                if (context.dataset.label === '壓力比') return `壓力比: ${Math.round(context.raw * 100)}%`;
+                return `${context.dataset.label}: ${money(context.raw)}`;
+              }
+            }
+          },
+          legend: { labels: { usePointStyle: true, boxWidth: 12 } }
+        },
+        scales: {
+          x: { stacked: true },
+          y: {
+            type: 'linear',
+            position: 'left',
+            stacked: true,
+            min: 0,
+            max: 50000,
+            title: { display: true, text: '金額' },
+            ticks: { stepSize: 10000, callback: value => money(value) }
+          },
+          y1: {
+            type: 'linear',
+            position: 'right',
+            min: 0,
+            max: 1,
+            title: { display: true, text: '壓力比' },
+            ticks: { stepSize: 0.2, callback: value => Math.round(value * 100) + '%' },
+            grid: { drawOnChartArea: false }
+          }
+        }
+      }
+    });
+  }
+
+  function render() {
+    const rows = calcRows();
+    renderLists();
+    renderTable(rows);
+    renderSummary(rows);
+    renderChart(rows);
+
+    if (!isHydrating) {
+      saveLocal();
+      scheduleDriveSave();
+    }
+  }
+
+  function connectGoogleDrive() {
+    if (!window.google || !google.accounts || !google.accounts.oauth2) {
+      alert('Google 登入套件尚未載入完成，請等幾秒後再試一次。');
+      return;
+    }
+
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: DRIVE_SCOPE,
+      callback: async (response) => {
+        if (response.error) {
+          console.error(response);
+          setSyncStatus('Google 授權失敗，請重新嘗試。');
+          return;
+        }
+        accessToken = response.access_token;
+        setSyncStatus('已連接 Google Drive，正在讀取雲端資料...');
+        await loadFromDrive(false);
+      }
+    });
+
+    tokenClient.requestAccessToken({ prompt: 'consent' });
+  }
+
+  async function requestDrive(url, options = {}) {
+    if (!accessToken) throw new Error('尚未連接 Google Drive');
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `HTTP ${res.status}`);
+    }
+    return res;
+  }
+
+  async function findDriveFile() {
+    const query = encodeURIComponent(`name='${DRIVE_FILE_NAME}' and trashed=false`);
+    const url = `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${query}&fields=files(id,name,modifiedTime)`;
+    const res = await requestDrive(url);
+    const data = await res.json();
+    return data.files && data.files.length > 0 ? data.files[0] : null;
+  }
+
+  async function createDriveFile(snapshot) {
+    const metadata = { name: DRIVE_FILE_NAME, parents: ['appDataFolder'] };
+    const boundary = 'cashflow_boundary_' + Date.now();
+    const body =
+      `--${boundary}\r\n` +
+      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+      JSON.stringify(metadata) + '\r\n' +
+      `--${boundary}\r\n` +
+      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+      JSON.stringify(snapshot, null, 2) + '\r\n' +
+      `--${boundary}--`;
+
+    const res = await requestDrive('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name', {
+      method: 'POST',
+      headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
+      body
+    });
+    return await res.json();
+  }
+
+  async function updateDriveFile(fileId, snapshot) {
+    await requestDrive(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+      body: JSON.stringify(snapshot, null, 2)
+    });
+  }
+
+  async function saveToDrive() {
+    if (!accessToken) return;
+    const snapshot = getSnapshot();
+    try {
+      if (!driveFileId) {
+        const existingFile = await findDriveFile();
+        if (existingFile) driveFileId = existingFile.id;
+      }
+
+      if (driveFileId) {
+        await updateDriveFile(driveFileId, snapshot);
+      } else {
+        const created = await createDriveFile(snapshot);
+        driveFileId = created.id;
+      }
+
+      setSyncStatus(`已同步到 Google Drive：${new Date().toLocaleTimeString('zh-TW')}`);
+    } catch (error) {
+      console.error(error);
+      setSyncStatus('同步失敗，請確認 Drive API 已啟用、OAuth 測試帳號已加入。');
+    }
+  }
+
+  function scheduleDriveSave() {
+    if (!accessToken) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveToDrive, 900);
+  }
+
+  async function manualSaveToDrive() {
+    if (!accessToken) {
+      alert('請先按「連接 Google」。');
+      return;
+    }
+    await saveToDrive();
+  }
+
+  async function loadFromDrive(forceAlert) {
+    if (!accessToken) {
+      if (forceAlert) alert('請先按「連接 Google」。');
+      return;
+    }
+
+    try {
+      const existingFile = await findDriveFile();
+      if (!existingFile) {
+        driveFileId = null;
+        await saveToDrive();
+        setSyncStatus('雲端尚無資料，已用目前畫面建立第一份雲端資料。');
+        return;
+      }
+
+      driveFileId = existingFile.id;
+      const res = await requestDrive(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`);
+      const cloudData = await res.json();
+
+      isHydrating = true;
+      applySnapshot(cloudData);
+      render();
+      saveLocal();
+      isHydrating = false;
+
+      setSyncStatus(`已從 Google Drive 載入：${new Date().toLocaleTimeString('zh-TW')}`);
+    } catch (error) {
+      isHydrating = false;
+      console.error(error);
+      setSyncStatus('雲端讀取失敗，先使用本機資料。');
+      if (forceAlert) alert('雲端讀取失敗，請看 Console 錯誤訊息。');
+    }
+  }
+
+  document.getElementById('income').addEventListener('input', render);
+  document.getElementById('startMonth').addEventListener('change', render);
+
+  isHydrating = true;
+  applySnapshot(loadLocal());
+  render();
+  isHydrating = false;
+</script>
+</body>
+</html>
