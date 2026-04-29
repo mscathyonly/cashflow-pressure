@@ -137,12 +137,12 @@
         <b>Google Drive 同步</b><br />
         資料會存到你的 Google Drive appDataFolder 隱藏資料夾。
         <div class="button-row" style="margin-top: 10px;">
-          <button class="btn-primary" onclick="connectGoogleDrive()">連接 Google</button>
+          <button id="connectBtn" class="btn-primary" onclick="connectGoogleDrive(false)">連接 Google</button>
           <button class="btn-gray" onclick="manualSaveToDrive()">立即上傳</button>
         </div>
         <div class="button-row">
           <button class="btn-gray" onclick="loadFromDrive(true)">從雲端載入</button>
-          <button class="btn-danger" onclick="resetAllData()">重設資料</button>
+          <button id="disconnectBtn" class="btn-danger" onclick="disconnectGoogleDrive()" disabled>登出 Google</button>
         </div>
         <div class="button-row">
           <button class="btn-gray" onclick="exportJson()">匯出 JSON</button>
@@ -327,9 +327,17 @@
   let driveFileId = null;
   let saveTimer = null;
   let isHydrating = false;
+  let tokenClient = null;
+  let autoLoginTried = false;
 
   function setSyncStatus(message) {
     document.getElementById('syncStatus').textContent = message;
+  }
+
+  function setGoogleConnected(isConnected) {
+    document.getElementById('connectBtn').textContent = isConnected ? '已連接 Google' : '連接 Google';
+    document.getElementById('connectBtn').disabled = isConnected;
+    document.getElementById('disconnectBtn').disabled = !isConnected;
   }
 
   function cloneData(data) {
@@ -708,28 +716,61 @@
     }
   }
 
-  function connectGoogleDrive() {
+  function initTokenClient() {
     if (!window.google || !google.accounts || !google.accounts.oauth2) {
+      return null;
+    }
+
+    if (!tokenClient) {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: DRIVE_SCOPE,
+        callback: async (response) => {
+          if (response.error) {
+            console.error(response);
+            accessToken = null;
+            setGoogleConnected(false);
+            setSyncStatus('Google 授權失敗或尚未完成，請手動按「連接 Google」。');
+            return;
+          }
+
+          accessToken = response.access_token;
+          setGoogleConnected(true);
+          setSyncStatus('已連接 Google Drive，正在讀取雲端資料...');
+          await loadFromDrive(false);
+        }
+      });
+    }
+
+    return tokenClient;
+  }
+
+  function connectGoogleDrive(forceConsent = false) {
+    const client = initTokenClient();
+    if (!client) {
       alert('Google 登入套件尚未載入完成，請等幾秒後再試一次。');
       return;
     }
 
-    const tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: DRIVE_SCOPE,
-      callback: async (response) => {
-        if (response.error) {
-          console.error(response);
-          setSyncStatus('Google 授權失敗，請重新嘗試。');
-          return;
-        }
-        accessToken = response.access_token;
-        setSyncStatus('已連接 Google Drive，正在讀取雲端資料...');
-        await loadFromDrive(false);
-      }
-    });
+    setSyncStatus('正在連接 Google Drive...');
+    client.requestAccessToken({ prompt: forceConsent ? 'consent' : '' });
+  }
 
-    tokenClient.requestAccessToken({ prompt: 'consent' });
+  function retryGoogleConsent() {
+    connectGoogleDrive(true);
+  }
+
+  function disconnectGoogleDrive() {
+    if (accessToken && window.google && google.accounts && google.accounts.oauth2) {
+      google.accounts.oauth2.revoke(accessToken, () => {});
+    }
+
+    accessToken = null;
+    driveFileId = null;
+    tokenClient = null;
+    autoLoginTried = false;
+    setGoogleConnected(false);
+    setSyncStatus('已登出 Google Drive。本機資料仍保留在 localStorage。');
   }
 
   async function requestDrive(url, options = {}) {
@@ -862,6 +903,10 @@
   applySnapshot(loadLocal());
   render();
   isHydrating = false;
+  setGoogleConnected(false);
+
+  // 不在頁面載入時自動彈 Google 視窗，避免手機或瀏覽器擋 popup。
+  // 第一次請手動按「連接 Google
 </script>
 </body>
 </html>
